@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verbaliza · audiodescrição didática de gêneros multimodais</title>
+<meta name="description" content="Aplicação web de apoio ao professor de Língua Portuguesa para a audiodescrição didática de tirinhas, charges, cartuns e memes para estudantes cegos e com baixa visão, com base nos manuais do Instituto Benjamin Constant.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<a class="skip-link" href="#conteudo-principal">Ir para o conteúdo principal</a>
+<a class="skip-link" href="#btn-acessibilidade">Ir para os ajustes de acessibilidade</a>
+
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">Verbaliza</span>
+      <span class="tagline">apoio ao professor &middot; audiodescrição didática de tirinhas, charges, cartuns e memes</span>
+    </div>
+    <nav class="switcher" aria-label="Escolher ambiente">
+      <button type="button" id="btn-vista-professor" aria-pressed="true">Ambiente do professor</button>
+      <button type="button" id="btn-vista-estudante" aria-pressed="false">Ambiente do estudante</button>
+    </nav>
+    <button type="button" class="btn-info" id="btn-acessibilidade" aria-expanded="true" aria-controls="painel-acessibilidade">Ocultar ajustes de acessibilidade</button>
+    <button type="button" class="btn-info" id="btn-atalhos" aria-haspopup="dialog">Atalhos de teclado</button>
+    <button type="button" class="btn-info" id="btn-sobre" aria-haspopup="dialog">Sobre este protótipo</button>
+  </header>
+
+  <section class="painel-acess" id="painel-acessibilidade" aria-labelledby="acess-titulo">
+    <div class="painel-acess-inner">
+      <h2 id="acess-titulo">Ajustes de acessibilidade</h2>
+      <p class="hint" style="grid-column:1 / -1;margin:-.4rem 0 .2rem;">Os ajustes ficam salvos neste navegador.</p>
+      <div class="ajustes-grupo">
+        <fieldset>
+          <legend>Cores e contraste</legend>
+          <div class="esquemas">
+            <button type="button" class="esquema-btn esq-padrao" data-esquema="padrao" aria-pressed="false">Claro (cor de papel)</button>
+            <button type="button" class="esquema-btn esq-escuro" data-esquema="escuro" aria-pressed="false">Escuro</button>
+            <button type="button" class="esquema-btn esq-branco-preto" data-esquema="branco-preto" aria-pressed="true">Branco sobre preto</button>
+            <button type="button" class="esquema-btn esq-preto-branco" data-esquema="preto-branco" aria-pressed="false">Preto sobre branco</button>
+            <button type="button" class="esquema-btn esq-amarelo-preto" data-esquema="amarelo-preto" aria-pressed="false">Amarelo sobre preto</button>
+            <button type="button" class="esquema-btn esq-preto-amarelo" data-esquema="preto-amarelo" aria-pressed="false">Preto sobre amarelo</button>
+          </div>
+        </fieldset>
+      </div>
+      <div class="ajustes-grupo">
+        <span class="ajustes-rotulo" id="rotulo-fonte">Tamanho da letra</span>
+        <div class="linha-controles" role="group" aria-labelledby="rotulo-fonte">
+          <button type="button" class="btn secundario pequeno" id="fonte-menos">A&minus; menor</button>
+          <span id="fonte-atual" aria-live="polite" style="font-weight:700;min-width:4.2rem;display:inline-block;">100%</span>
+          <button type="button" class="btn secundario pequeno" id="fonte-mais">A&plus; maior</button>
+        </div>
+        <label class="check-linha"><input type="checkbox" id="chk-espacamento"> Espaçamento ampliado entre linhas e letras</label>
+        <label class="check-linha"><input type="checkbox" id="chk-animacoes"> Reduzir animações e rolagem suave</label>
+      </div>
+      <div class="ajustes-grupo">
+        <span class="ajustes-rotulo" id="rotulo-voz">Narração por voz</span>
+        <div class="linha-controles">
+          <select class="ui-select" id="seletor-voz" aria-labelledby="rotulo-voz"></select>
+        </div>
+        <p class="hint">Usada no ambiente do estudante e no botão Ouvir roteiro. Quem usa leitor de tela pode manter o próprio leitor. A narração nunca começa sozinha.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="status-strip" id="status-strip" role="status" aria-live="polite"></div>
+
+  <main id="conteudo-principal" tabindex="-1">
+    <!-- ================= AMBIENTE DO PROFESSOR ================= -->
+    <section id="vista-professor" aria-labelledby="titulo-vista-professor">
+      <h1 id="titulo-vista-professor" class="visually-hidden" tabindex="-1">Ambiente do professor</h1>
+      <div class="prof-layout">
+        <section class="como-usar" aria-labelledby="como-usar-prof" style="grid-column:1 / -1; margin:1.5rem 1.25rem 0;">
+          <h2 id="como-usar-prof">Como usar este ambiente</h2>
+          <p>A adaptação de cada tirinha, charge, cartum ou meme segue sete etapas, listadas no menu ao lado (ou acima, em telas estreitas). Registre o material, indique o gênero e o efeito de sentido que o estudante deve perceber, descreva cada quadro e transcreva o texto verbal, monte e revise o roteiro, ajuste a versão para baixa visão, registre a revisão e a validação do consultor, confira o checklist de acessibilidade e, por fim, salve e exporte. Cada recomendação mostra a fonte nos manuais do IBC. Os ajustes de cores, tamanho da letra e voz ficam no topo da página e valem também para o estudante.</p>
+          <div class="acoes-linha">
+            <button type="button" class="btn secundario pequeno" id="btn-referenciais" aria-haspopup="dialog">Regras e referenciais da ferramenta</button>
+            <button type="button" class="btn secundario pequeno" id="btn-ia" aria-haspopup="dialog">Configurar inteligência artificial (opcional)</button>
+          </div>
+        </section>
+        <nav class="etapas" aria-label="Etapas da adaptação" id="nav-etapas">
+          <ol id="lista-etapas"></ol>
+        </nav>
+        <div class="painel" id="painel"></div>
+      </div>
+    </section>
+
+    <!-- ================= AMBIENTE DO ESTUDANTE ================= -->
+    <section id="vista-estudante" aria-labelledby="titulo-vista-estudante" hidden>
+      <h1 id="titulo-vista-estudante" class="visually-hidden" tabindex="-1">Ambiente do estudante</h1>
+      <div class="sala">
+        <div id="conteudo-estudante"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape-app">
+    Protótipo de pesquisa do Mestrado Profissional em Ensino na Temática da Deficiência Visual, Instituto Benjamin Constant. Verbaliza v0.5.1. Os dados ficam apenas neste navegador; nada é enviado a servidores, exceto quando o professor configura um serviço de IA e pede um rascunho.
+  </footer>
+</div>
+
+<div id="anunciador" class="visually-hidden" aria-live="assertive"></div>
+
+<dialog class="sobre" id="dlg-sobre" aria-labelledby="sobre-titulo">
+  <div class="sobre-inner">
+    <h2 id="sobre-titulo">Sobre este protótipo</h2>
+    <p>O Verbaliza apoia o professor de Língua Portuguesa do ensino médio na audiodescrição didática de tirinhas, charges, cartuns e memes para estudantes cegos e com baixa visão. A descrição oferece os elementos verbais e visuais; a inferência do humor, da ironia e da crítica fica com o estudante.</p>
+    <p>As decisões seguem três documentos do Instituto Benjamin Constant: o Manual de audiodescrição (GPEAD, 2025), o Manual de adaptação de textos para o Sistema Braille, 2ª edição (GEPA, 2025), e o Manual de diagramação de textos para produção de livros ampliados (IBC, 2025). Cada recomendação mostra a fonte e a página.</p>
+    <p>A inteligência artificial é opcional e produz apenas rascunhos. A revisão é do professor e a validação é de um consultor com deficiência visual.</p>
+    <p>Este é um protótipo de pesquisa. Ele ainda não foi avaliado com professores, consultores ou estudantes.</p>
+    <button type="button" class="sobre-close" data-fechar>Fechar</button>
+  </div>
+</dialog>
+
+<dialog class="sobre" id="dlg-atalhos" aria-labelledby="atalhos-titulo">
+  <div class="sobre-inner">
+    <h2 id="atalhos-titulo">Atalhos de teclado</h2>
+    <table>
+      <caption class="visually-hidden">Atalhos disponíveis</caption>
+      <thead><tr><th scope="col">Teclas</th><th scope="col">Ação</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>Alt</kbd> + <kbd>1</kbd> a <kbd>7</kbd></td><td>Ir para a etapa correspondente</td></tr>
+        <tr><td><kbd>Alt</kbd> + <kbd>V</kbd></td><td>Verificar o roteiro</td></tr>
+        <tr><td><kbd>Alt</kbd> + <kbd>S</kbd></td><td>Salvar na biblioteca</td></tr>
+        <tr><td><kbd>O</kbd> (ambiente do estudante)</td><td>Ouvir o material, pausar e continuar</td></tr>
+        <tr><td><kbd>Tab</kbd> e <kbd>Shift</kbd> + <kbd>Tab</kbd></td><td>Avançar e voltar entre os campos</td></tr>
+      </tbody>
+    </table>
+    <button type="button" class="sobre-close" data-fechar>Fechar</button>
+  </div>
+</dialog>
+
+<dialog class="sobre" id="dlg-referenciais" aria-labelledby="ref-titulo">
+  <div class="sobre-inner">
+    <h2 id="ref-titulo">Regras e referenciais do Verbaliza</h2>
+    <div id="ref-conteudo"></div>
+    <button type="button" class="sobre-close" data-fechar>Fechar</button>
+  </div>
+</dialog>
+
+<dialog class="sobre" id="dlg-ia" aria-labelledby="ia-titulo">
+  <div class="sobre-inner">
+    <h2 id="ia-titulo">Configurar inteligência artificial (opcional)</h2>
+    <p class="hint">Sem configuração, o Verbaliza funciona por completo: o professor escreve o roteiro com o apoio das regras. Com um serviço configurado, a imagem e o contexto são enviados ao serviço escolhido somente quando você pedir um rascunho.</p>
+    <div class="campo">
+      <label for="ia-provedor">Serviço</label>
+      <select id="ia-provedor" class="ui-select" style="width:100%">
+        <option value="nenhum">Nenhum (somente instrução para copiar)</option>
+        <option value="gemini">Google Gemini</option>
+        <option value="openai">OpenAI</option>
+        <option value="anthropic">Anthropic Claude</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label for="ia-modelo">Modelo</label>
+      <input type="text" id="ia-modelo" aria-describedby="ia-modelo-dica">
+      <p class="hint" id="ia-modelo-dica">Os nomes de modelo mudam com frequência. Confira o nome atual na documentação do serviço.</p>
+    </div>
+    <div class="campo">
+      <label for="ia-chave">Chave de acesso do serviço</label>
+      <input type="password" id="ia-chave" autocomplete="off" aria-describedby="ia-chave-dica">
+      <p class="hint" id="ia-chave-dica">A chave é usada direto deste navegador para o serviço. Por padrão, fica guardada só até fechar a aba.</p>
+    </div>
+    <label class="check-linha"><input type="checkbox" id="ia-lembrar"> Lembrar a chave neste computador</label>
+    <div class="acoes-linha">
+      <button type="button" class="btn" id="ia-salvar">Salvar configuração</button>
+      <button type="button" class="btn secundario" data-fechar>Fechar</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="js/regras.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
