@@ -145,21 +145,25 @@ function renderReferenciais() {
 
 /* ---------- configuração de IA ---------- */
 const MODELOS_PADRAO = { gemini: "gemini-2.5-flash", openai: "gpt-4.1-mini", anthropic: "claude-sonnet-4-5", nenhum: "" };
-function lerIA() { return Object.assign({ provedor: "nenhum", modelo: "", chave: "" }, lerLocal(CHAVE_IA) || {}, lerSessao(CHAVE_IA) || {}); }
+function lerIA() { return Object.assign({ provedor: "nenhum", modelo: "", chave: "", auto: true, consentimento: false }, lerLocal(CHAVE_IA) || {}, lerSessao(CHAVE_IA) || {}); }
+function iaPronta() { const c = lerIA(); return c.provedor !== "nenhum" && !!c.chave && !!c.consentimento; }
 function carregarIAnoForm() {
   const c = lerIA();
   $("#ia-provedor").value = c.provedor; $("#ia-modelo").value = c.modelo || MODELOS_PADRAO[c.provedor];
   $("#ia-chave").value = c.chave || ""; $("#ia-lembrar").checked = !!(lerLocal(CHAVE_IA) || {}).chave;
+  $("#ia-auto").checked = c.auto !== false; $("#ia-consent").checked = !!c.consentimento;
 }
 $("#ia-provedor").addEventListener("change", e => { $("#ia-modelo").value = MODELOS_PADRAO[e.target.value] || ""; });
 $("#ia-salvar").addEventListener("click", () => {
-  const c = { provedor: $("#ia-provedor").value, modelo: $("#ia-modelo").value.trim(), chave: $("#ia-chave").value.trim() };
+  const c = { provedor: $("#ia-provedor").value, modelo: $("#ia-modelo").value.trim(), chave: $("#ia-chave").value.trim(), auto: $("#ia-auto").checked, consentimento: $("#ia-consent").checked };
+  if (c.provedor !== "nenhum" && c.chave && !c.consentimento) { anunciar("Marque a confirmação sobre o envio da imagem para usar o serviço de IA."); $("#ia-consent").focus(); return; }
   const lembrar = $("#ia-lembrar").checked;
-  gravarLocal(CHAVE_IA, { provedor: c.provedor, modelo: c.modelo, chave: lembrar ? c.chave : "" });
+  gravarLocal(CHAVE_IA, { provedor: c.provedor, modelo: c.modelo, chave: lembrar ? c.chave : "", auto: c.auto, consentimento: c.consentimento });
   gravarSessao(CHAVE_IA, c);
   $("#dlg-ia").close();
   anunciar(c.provedor === "nenhum" ? "Configuração salva. Nenhum serviço de IA será usado." : "Configuração de IA salva.");
-  if (etapaAtual === "roteiro") renderEtapa(false);
+  if (etapaAtual === "roteiro" || etapaAtual === "material") renderEtapa(false);
+  if (etapaAtual === "material" && iaPronta() && c.auto && (imagemEnvio || item.material.imagem) && !item.roteiro.descricao.trim()) gerarRascunhoAutomatico();
 });
 
 async function chamarIA(instrucao, dataURL) {
@@ -326,6 +330,7 @@ function telaMaterial() {
     <span id="m-img-nome">${m.imagemNome ? "Arquivo atual: " + esc(m.imagemNome) : "Nenhum arquivo escolhido"}</span></div>
     <p class="hint" id="m-img-dica">Aceita imagem (PNG, JPG, WEBP) ou PDF. No PDF, escolha a página que contém a tirinha, a charge, o cartum ou o meme; o texto da página pode ser copiado para o enunciado. A imagem fica neste navegador. Ela só é enviada a um serviço de IA se você pedir um rascunho na etapa 3. Não use imagens que identifiquem estudantes.</p>
     <div id="m-pdf" hidden></div>
+    <div id="m-ia" class="cartao" role="status" aria-live="polite" style="margin:.6rem 0">${caixaIA()}</div>
     <div id="m-img-previa">${m.imagem ? `<img class="previa-imagem" src="${m.imagem}" alt="Prévia da imagem anexada (${esc(m.imagemNome || "sem nome")}). A descrição é construída na etapa 3.">
       <button type="button" class="btn secundario pequeno" id="m-img-remover" style="margin-top:.6rem">Remover imagem</button>` : ""}</div>
   </div>
@@ -372,6 +377,7 @@ function montarCaixaPdf(p, foco) {
       await page.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
       await usarImagem(cv.toDataURL("image/png"), `${pdfAtual.nome}, página ${k}`);
       renderEtapa(false); anunciar(`Página ${k} do PDF anexada como imagem.`); $("#m-pdf-pag") ? $("#m-pdf-pag").focus() : $("#m-img-btn").focus();
+      item.roteiro.descricao = item.roteiro.origem === "ia" ? "" : item.roteiro.descricao; aposAnexar();
     } catch (err) { anunciar("Não foi possível converter a página: " + err.message); }
   });
   $("#m-pdf-texto", p).addEventListener("click", async () => {
@@ -385,7 +391,45 @@ function montarCaixaPdf(p, foco) {
   });
   if (foco) $("#m-pdf-pag", p).focus();
 }
+function caixaIA() {
+  const c = lerIA(), temImg = !!item.material.imagem, temDesc = !!item.roteiro.descricao.trim();
+  if (iaPronta() && c.auto) {
+    if (temDesc && item.roteiro.origem === "ia") return `<p><strong>Rascunho da descrição gerado pela IA.</strong> Revise-o na etapa 3, comparando cada informação com a imagem.${item.roteiro.semFinalidade ? " Ele foi gerado antes do registro do efeito de sentido; na etapa 3 você pode gerar de novo depois de preencher a etapa 2." : ""}</p><div class="acoes-linha"><button type="button" class="btn secundario pequeno" data-ir="roteiro">Ir para o roteiro</button></div>`;
+    return `<p>A descrição será gerada automaticamente pela IA (${esc(c.provedor)}) assim que você anexar a imagem ou o PDF.</p>`;
+  }
+  return `<p><strong>Descrição automática desligada.</strong> Para que o Verbaliza gere um rascunho da descrição ao anexar a imagem ou o PDF, configure um serviço de IA uma vez. Sem IA, você descreve os quadros na etapa 3, com o apoio das regras.</p><div class="acoes-linha"><button type="button" class="btn secundario pequeno" id="m-ia-config">Configurar IA</button></div>`;
+}
+let gerandoAuto = false;
+async function gerarRascunhoAutomatico() {
+  const img = imagemEnvio || item.material.imagem, box = $("#m-ia");
+  if (!img || gerandoAuto || !iaPronta()) return;
+  gerandoAuto = true;
+  if (box) box.innerHTML = "<p>Gerando o rascunho da descrição com a IA. Isso pode levar alguns segundos.</p>";
+  anunciar("Gerando o rascunho da descrição com a IA.");
+  try {
+    const resp = await chamarIA(montarInstrucaoIA(item), img);
+    const out = interpretarRespostaIA(resp);
+    if (out.descricao) item.roteiro.descricao = out.descricao;
+    item.roteiro.nota = out.nota || item.roteiro.nota;
+    if (out.alternativa) item.roteiro.alternativa = out.alternativa;
+    item.roteiro.duvidas = out.duvidas; item.roteiro.origem = "ia";
+    item.roteiro.semFinalidade = !item.analise.finalidade.trim();
+    item.pesquisa = item.pesquisa || {}; item.pesquisa.guiadaBruta = out.descricao;
+    item.revisao.status = "rascunho"; salvarAtual();
+    if (etapaAtual === "material") { const b = $("#m-ia"); if (b) { b.innerHTML = caixaIA(); ligarCaixaIA(b); } } else renderEtapa(false);
+    anunciar("Rascunho da descrição gerado. Revise-o na etapa 3.");
+  } catch (e) {
+    const b = $("#m-ia"); if (b) b.innerHTML = `<p>Não foi possível gerar o rascunho: ${esc(e.message)}</p>`;
+    anunciar("Não foi possível gerar o rascunho: " + e.message);
+  } finally { gerandoAuto = false; }
+}
+function ligarCaixaIA(box) {
+  const cfg = $("#m-ia-config", box); cfg && cfg.addEventListener("click", () => { carregarIAnoForm(); $("#dlg-ia").showModal(); });
+  $$("[data-ir]", box).forEach(b => b.addEventListener("click", () => irPara(b.dataset.ir)));
+}
+function aposAnexar() { const c = lerIA(); if (iaPronta() && c.auto) gerarRascunhoAutomatico(); }
 function posMaterial(p) {
+  ligarCaixaIA($("#m-ia", p));
   montarCaixaPdf(p, false);
   $("#m-img-btn", p).addEventListener("click", () => $("#m-img", p).click());
   $("#m-img", p).addEventListener("change", e => {
@@ -398,8 +442,9 @@ function posMaterial(p) {
           const lib = await carregarPdfJs();
           pdfAtual = { doc: await lib.getDocument({ data: new Uint8Array(fr.result) }).promise, nome: f.name, pagina: 1 };
           const nm = $("#m-img-nome", p); if (nm) nm.textContent = "Arquivo atual: " + f.name;
-          montarCaixaPdf(p, true);
-          anunciar(`PDF aberto, com ${pdfAtual.doc.numPages} página(s). Escolha a página que contém a imagem.`);
+          montarCaixaPdf(p, false);
+          anunciar(`PDF aberto, com ${pdfAtual.doc.numPages} página(s). A página 1 será usada como imagem; se a tirinha estiver em outra página, escolha o número e clique em Usar esta página como imagem.`);
+          const bt = $("#m-pdf-usar"); if (bt) bt.click();
         } catch (err) { anunciar(err.message); }
       };
       fr.readAsArrayBuffer(f);
@@ -408,9 +453,9 @@ function posMaterial(p) {
     pdfAtual = null;
     fr.onload = async () => {
       try {
-        await usarImagem(fr.result, f.name); renderEtapa(false);
+        await usarImagem(fr.result, f.name); if (item.roteiro.origem === "ia") item.roteiro.descricao = ""; renderEtapa(false);
         anunciar("Imagem anexada: " + f.name + ".");
-        $("#m-img-btn").focus();
+        $("#m-img-btn").focus(); aposAnexar();
       } catch (err) { anunciar(err.message); }
     };
     fr.readAsDataURL(f);
@@ -509,8 +554,9 @@ function telaRoteiro() {
     <h3 id="ia-sec">Rascunho com inteligência artificial (opcional)</h3>
     <div class="aviso-ia"><strong>A IA produz apenas um ponto de partida.</strong> A instrução enviada contém as regras dos manuais e a finalidade pedagógica. Estudos com consultores com deficiência visual indicam descrições de IA com omissões e erros, o que exige revisão humana. ${esc(fonteTxt(["PERDIGAO", "e2593"]))}</div>
     ${c.provedor !== "nenhum" && c.chave ? `
-      <label class="check-linha"><input type="checkbox" id="r-consent"> Confirmo que a imagem não identifica estudantes e autorizo o envio da imagem e do contexto ao serviço configurado (${esc(c.provedor)}).</label>
-      <div class="acoes-linha"><button type="button" class="btn" id="r-gerar">Gerar rascunho com IA</button></div>
+      ${item.roteiro.semFinalidade && item.analise.finalidade.trim() && item.roteiro.origem === "ia" ? `<div class="aviso-atencao">O rascunho foi gerado antes do registro do efeito de sentido. Gere de novo para que a IA receba a finalidade registrada na etapa 2.</div>` : ""}
+      ${c.consentimento ? "" : `<label class="check-linha"><input type="checkbox" id="r-consent"> Confirmo que a imagem não identifica estudantes e autorizo o envio da imagem e do contexto ao serviço configurado (${esc(c.provedor)}).</label>`}
+      <div class="acoes-linha"><button type="button" class="btn" id="r-gerar">${item.roteiro.origem === "ia" && item.roteiro.descricao.trim() ? "Gerar o rascunho de novo" : "Gerar rascunho com IA"}</button></div>
       <p class="progresso" id="r-progresso" role="status"></p>`
       : `<p class="hint">Nenhum serviço configurado. Use Configurar IA, no topo, ou copie a instrução para outro assistente.</p>`}
     <div class="acoes-linha"><button type="button" class="btn secundario" id="r-copiar">Copiar instrução com as regras</button></div>
@@ -617,12 +663,12 @@ function posRoteiro(p) {
   const g = $("#r-gerar", p);
   g && g.addEventListener("click", async () => {
     const prog = $("#r-progresso", p);
-    if (!$("#r-consent", p).checked) { prog.textContent = "Marque a confirmação antes de enviar a imagem."; $("#r-consent", p).focus(); return; }
+    const ck = $("#r-consent", p);
+    if (ck && !ck.checked) { prog.textContent = "Marque a confirmação antes de enviar a imagem."; ck.focus(); return; }
     const img = imagemEnvio || item.material.imagem;
     if (!img) { prog.textContent = "Anexe a imagem na etapa 1 antes de gerar o rascunho."; return; }
-    if (!item.analise.finalidade.trim()) { prog.textContent = "Registre a finalidade pedagógica na etapa 2. Ela orienta o rascunho."; return; }
-    g.disabled = true; prog.textContent = "Gerando rascunho. Isso pode levar alguns segundos.";
-    try { const resp = await chamarIA(montarInstrucaoIA(item), img); aplicarRascunho(resp, "ia"); }
+    g.disabled = true; prog.textContent = item.analise.finalidade.trim() ? "Gerando rascunho. Isso pode levar alguns segundos." : "Gerando rascunho sem o efeito de sentido, que não foi registrado na etapa 2. Isso pode levar alguns segundos.";
+    try { const resp = await chamarIA(montarInstrucaoIA(item), img); item.roteiro.semFinalidade = !item.analise.finalidade.trim(); aplicarRascunho(resp, "ia"); }
     catch (e) { prog.textContent = "Não foi possível gerar o rascunho: " + e.message; g.disabled = false; }
   });
 }
@@ -989,99 +1035,9 @@ function blocosEstudante(it) {
   return B;
 }
 
-/* ---------- ambiente do estudante ---------- */
-let vistaAtual = "professor";
-let estudanteSel = "";
-const narracao = { ativa: false, pausada: false, fila: [], i: 0 };
-function materiaisEstudante() {
-  const b = biblioteca().filter(x => x.estrategia !== "suprimir");
-  const lista = b.map(x => ({ id: x.id, it: x, previa: false }));
-  if (!b.some(x => x.id === item.id) && item.material.titulo.trim()) lista.unshift({ id: item.id, it: item, previa: true });
-  return lista;
-}
-function pararNarracao() {
-  narracao.ativa = false; narracao.pausada = false;
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
-  $$(".lendo").forEach(e => e.classList.remove("lendo"));
-  const b = $("#btn-narrar-toggle"); if (b) b.textContent = "Ouvir este material";
-}
-function narrarProximo() {
-  $$(".lendo").forEach(e => e.classList.remove("lendo"));
-  if (!narracao.ativa || narracao.i >= narracao.fila.length) { pararNarracao(); anunciar("Fim do material."); return; }
-  const el = narracao.fila[narracao.i];
-  el.classList.add("lendo");
-  el.scrollIntoView({ block: "center", behavior: prefs.reduzirAnimacoes ? "auto" : "smooth" });
-  const u = new SpeechSynthesisUtterance(el.textContent.replace(/\s+/g, " ").trim());
-  u.lang = "pt-BR"; const v = vozes.find(x => x.name === prefs.vozNome); if (v) u.voice = v;
-  u.onend = () => { if (narracao.ativa && !narracao.pausada) { narracao.i++; narrarProximo(); } };
-  speechSynthesis.speak(u);
-}
-function alternarNarracao() {
-  if (!("speechSynthesis" in window)) { anunciar("A narração por voz não está disponível neste navegador."); return; }
-  const b = $("#btn-narrar-toggle");
-  if (!narracao.ativa) {
-    narracao.fila = $$("#blocos-material .bloco"); narracao.i = 0; narracao.ativa = true; narracao.pausada = false;
-    b.textContent = "Pausar narração"; narrarProximo();
-  } else if (!narracao.pausada) { narracao.pausada = true; speechSynthesis.pause(); b.textContent = "Continuar narração"; }
-  else { narracao.pausada = false; speechSynthesis.resume(); b.textContent = "Pausar narração"; }
-}
-function renderEstudante() {
-  pararNarracao();
-  const alvo = $("#conteudo-estudante");
-  const lista = materiaisEstudante();
-  if (!lista.length) {
-    alvo.innerHTML = `<div class="banner-vazio"><h2>Nenhum material disponível</h2><p>Se você é estudante, abra o arquivo enviado pelo professor. Se você é professor, salve um material na biblioteca, na etapa 6 do seu ambiente.</p></div>`;
-    return;
-  }
-  if (!lista.some(x => x.id === estudanteSel)) estudanteSel = lista[0].id;
-  const sel = lista.find(x => x.id === estudanteSel), it = sel.it, m = it.material, r = it.roteiro;
-  const st = statusMaterial(it);
-  const blocos = [];
-  if (m.enunciado) blocos.push(`<div class="bloco narracao">${esc(m.enunciado)}</div>`);
-  if (it.estrategia === "nao_adaptada") blocos.push(`<div class="bloco nota">[não adaptada]</div>`);
-  else if (it.estrategia === "peca_orientacao") blocos.push(`<div class="bloco nota">[Peça orientação]</div>`);
-  else if (r.descricao) {
-    if (r.nota) blocos.push(`<div class="bloco nota"><strong>Nota introdutória:</strong> ${esc(r.nota)}</div>`);
-    blocos.push(`<div class="bloco ad"><span class="ad-rotulo">Descrição da imagem</span>${esc(r.descricao).replace(/\n/g, "<br>")}</div>`);
-    if (r.alternativa) blocos.push(`<div class="bloco">${tabelaAlternativa(r.alternativa)}</div>`);
-  } else blocos.push(`<div class="bloco nota">O professor ainda não escreveu a descrição desta imagem.</div>`);
-  if (m.legenda && it.estrategia !== "suprimir") blocos.push(`<div class="bloco narracao"><strong>Legenda:</strong> ${esc(m.legenda)}</div>`);
-  alvo.innerHTML = `
-    ${lista.length > 1 ? `<div class="campo"><label for="est-sel">Escolha o material</label><select id="est-sel" class="ui-select" style="width:100%">${lista.map(x => `<option value="${x.id}"${x.id === estudanteSel ? " selected" : ""}>${esc(x.it.material.titulo || "Sem título")}${x.previa ? " (pré-visualização)" : ""}</option>`).join("")}</select></div>` : ""}
-    <section class="como-usar" aria-labelledby="como-usar-est">
-      <h2 id="como-usar-est">Como usar este material</h2>
-      <p>O botão grande "Ouvir este material" inicia a narração; apertado de novo, pausa e continua. Pelo teclado, a tecla O faz o mesmo. Quem usa leitor de tela pode ler o material pelos títulos e parágrafos. Os ajustes de cores, tamanho da letra e voz ficam no topo da página.</p>
-    </section>
-    <header class="obra-cab">
-      <span class="rotulo-serie">${esc([m.componente, m.ano].filter(Boolean).join(" · ") || "Material adaptado")}</span>
-      <h2 id="titulo-material" tabindex="-1" style="font-size:2rem;margin:.15rem 0 .2rem">${esc(m.titulo || "Material sem título")}</h2>
-      <p class="autoria">${m.fonte ? esc(m.fonte) + ". " : ""}${m.pagina ? "Página do original: " + esc(m.pagina) + ". " : ""}${sel.previa || st.cls !== "validado" ? `<em>(${esc(sel.previa ? "pré-visualização" : st.rotulo.toLowerCase())})</em>` : ""}</p>
-    </header>
-    <button type="button" class="btn-narrar" id="btn-narrar-toggle">Ouvir este material</button>
-    ${m.imagem && it.estrategia !== "suprimir" && (m.destinatarios || []).includes("baixa") ? `<figure style="margin:0 0 1.2rem"><img class="previa-imagem" style="max-height:none;width:100%" src="${m.imagem}" alt="${esc(r.descricao ? "Imagem descrita a seguir." : "Imagem do material.")}"></figure>` : ""}
-    <div id="blocos-material">${blocos.join("")}</div>
-    <div class="rodape-parte"><span class="status-leitura" id="status-leitura" aria-live="polite"></span></div>`;
-  const s2 = $("#est-sel"); s2 && s2.addEventListener("change", () => { estudanteSel = s2.value; renderEstudante(); $("#est-sel").focus(); });
-  $("#btn-narrar-toggle").addEventListener("click", alternarNarracao);
-}
-function mudarVista(v) {
-  vistaAtual = v;
-  const prof = v === "professor";
-  $("#vista-professor").hidden = !prof; $("#vista-estudante").hidden = prof;
-  $("#btn-vista-professor").setAttribute("aria-pressed", prof ? "true" : "false");
-  $("#btn-vista-estudante").setAttribute("aria-pressed", prof ? "false" : "true");
-  if (prof) { pararNarracao(); renderEtapa(false); $("#titulo-vista-professor").focus(); }
-  else { renderEstudante(); const h = $("#titulo-material") || $("#titulo-vista-estudante"); h.focus(); }
-  anunciar(prof ? "Ambiente do professor." : "Ambiente do estudante.");
-}
-$("#btn-vista-professor").addEventListener("click", () => mudarVista("professor"));
-$("#btn-vista-estudante").addEventListener("click", () => mudarVista("estudante"));
-document.addEventListener("keydown", e => {
-  if (vistaAtual !== "estudante" || e.altKey || e.ctrlKey || e.metaKey) return;
-  const tag = (document.activeElement && document.activeElement.tagName) || "";
-  if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;
-  if (e.key.toLowerCase() === "o" && $("#btn-narrar-toggle")) { e.preventDefault(); alternarNarracao(); }
-});
+/* ---------- ambiente único do professor (o ambiente do estudante foi retirado na versão 0.6) ---------- */
+const vistaAtual = "professor";
+function pararNarracao() { if ("speechSynthesis" in window) speechSynthesis.cancel(); }
 
 /* ---------- atalhos ---------- */
 document.addEventListener("keydown", e => {
