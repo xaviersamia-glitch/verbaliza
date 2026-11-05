@@ -7,6 +7,7 @@ Protótipo do produto educacional em desenvolvimento no Mestrado Profissional em
 ## O que a aplicação faz
 
 - Organiza a descrição por quadros (Q1, Q2...) e monta a nota de transcrição no formato do Manual de adaptação de textos para o Sistema Braille do IBC (GEPA, 2025).
+- Com um serviço de IA configurado (por exemplo, uma chave gratuita do Google Gemini), gera automaticamente um rascunho da descrição assim que o professor anexa a imagem ou o PDF da atividade; o rascunho sempre passa pela revisão do professor.
 - Exige o registro do efeito de sentido que o estudante deve inferir (humor, ironia, crítica), sem explicá-lo na descrição (BNCC, EM13LP14 e EM13LGG103).
 - Verifica o roteiro segundo os manuais do IBC: texto verbal transcrito literalmente, ausência de interpretação de emoções, limite de 300 palavras, entre outros critérios, sempre com fonte e página.
 - Usa IA apenas como rascunho opcional e mantém a revisão do professor e a validação por consultor com deficiência visual.
@@ -26,4 +27,4 @@ Os dados ficam no navegador de quem usa. Nada é enviado a servidores, exceto qu
 
 ## Situação
 
-Versão 0.5.1. Ainda não avaliada com professores, consultores ou estudantes.
+Versão 0.6. Ainda não avaliada com professores, consultores ou estudantes.

@@ -20,10 +20,6 @@
       <span class="mark">Verbaliza</span>
       <span class="tagline">apoio ao professor &middot; audiodescrição didática de tirinhas, charges, cartuns e memes</span>
     </div>
-    <nav class="switcher" aria-label="Escolher ambiente">
-      <button type="button" id="btn-vista-professor" aria-pressed="true">Ambiente do professor</button>
-      <button type="button" id="btn-vista-estudante" aria-pressed="false">Ambiente do estudante</button>
-    </nav>
     <button type="button" class="btn-info" id="btn-acessibilidade" aria-expanded="true" aria-controls="painel-acessibilidade">Ocultar ajustes de acessibilidade</button>
     <button type="button" class="btn-info" id="btn-atalhos" aria-haspopup="dialog">Atalhos de teclado</button>
     <button type="button" class="btn-info" id="btn-sobre" aria-haspopup="dialog">Sobre este protótipo</button>
@@ -61,7 +57,7 @@
         <div class="linha-controles">
           <select class="ui-select" id="seletor-voz" aria-labelledby="rotulo-voz"></select>
         </div>
-        <p class="hint">Usada no ambiente do estudante e no botão Ouvir roteiro. Quem usa leitor de tela pode manter o próprio leitor. A narração nunca começa sozinha.</p>
+        <p class="hint">Usada no botão Ouvir roteiro. Quem usa leitor de tela pode manter o próprio leitor. A narração nunca começa sozinha.</p>
       </div>
     </div>
   </section>
@@ -75,7 +71,7 @@
       <div class="prof-layout">
         <section class="como-usar" aria-labelledby="como-usar-prof" style="grid-column:1 / -1; margin:1.5rem 1.25rem 0;">
           <h2 id="como-usar-prof">Como usar este ambiente</h2>
-          <p>A adaptação de cada tirinha, charge, cartum ou meme segue sete etapas, listadas no menu ao lado (ou acima, em telas estreitas). Registre o material, indique o gênero e o efeito de sentido que o estudante deve perceber, descreva cada quadro e transcreva o texto verbal, monte e revise o roteiro, ajuste a versão para baixa visão, registre a revisão e a validação do consultor, confira o checklist de acessibilidade e, por fim, salve e exporte. Cada recomendação mostra a fonte nos manuais do IBC. Os ajustes de cores, tamanho da letra e voz ficam no topo da página e valem também para o estudante.</p>
+          <p>A adaptação de cada tirinha, charge, cartum ou meme segue sete etapas, listadas no menu ao lado (ou acima, em telas estreitas). Registre o material, indique o gênero e o efeito de sentido que o estudante deve perceber, descreva cada quadro e transcreva o texto verbal, monte e revise o roteiro, ajuste a versão para baixa visão, registre a revisão e a validação do consultor, confira o checklist de acessibilidade e, por fim, salve e exporte. Cada recomendação mostra a fonte nos manuais do IBC. Os ajustes de cores, tamanho da letra e voz ficam no topo da página.</p>
           <div class="acoes-linha">
             <button type="button" class="btn secundario pequeno" id="btn-referenciais" aria-haspopup="dialog">Regras e referenciais da ferramenta</button>
             <button type="button" class="btn secundario pequeno" id="btn-ia" aria-haspopup="dialog">Configurar inteligência artificial (opcional)</button>
@@ -88,17 +84,10 @@
       </div>
     </section>
 
-    <!-- ================= AMBIENTE DO ESTUDANTE ================= -->
-    <section id="vista-estudante" aria-labelledby="titulo-vista-estudante" hidden>
-      <h1 id="titulo-vista-estudante" class="visually-hidden" tabindex="-1">Ambiente do estudante</h1>
-      <div class="sala">
-        <div id="conteudo-estudante"></div>
-      </div>
-    </section>
   </main>
 
   <footer class="rodape-app">
-    Protótipo de pesquisa do Mestrado Profissional em Ensino na Temática da Deficiência Visual, Instituto Benjamin Constant. Verbaliza v0.5.1. Os dados ficam apenas neste navegador; nada é enviado a servidores, exceto quando o professor configura um serviço de IA e pede um rascunho.
+    Protótipo de pesquisa do Mestrado Profissional em Ensino na Temática da Deficiência Visual, Instituto Benjamin Constant. Verbaliza v0.6. Os dados ficam apenas neste navegador; nada é enviado a servidores, exceto quando o professor configura um serviço de IA e pede um rascunho.
   </footer>
 </div>
 
@@ -125,7 +114,6 @@
         <tr><td><kbd>Alt</kbd> + <kbd>1</kbd> a <kbd>7</kbd></td><td>Ir para a etapa correspondente</td></tr>
         <tr><td><kbd>Alt</kbd> + <kbd>V</kbd></td><td>Verificar o roteiro</td></tr>
         <tr><td><kbd>Alt</kbd> + <kbd>S</kbd></td><td>Salvar na biblioteca</td></tr>
-        <tr><td><kbd>O</kbd> (ambiente do estudante)</td><td>Ouvir o material, pausar e continuar</td></tr>
         <tr><td><kbd>Tab</kbd> e <kbd>Shift</kbd> + <kbd>Tab</kbd></td><td>Avançar e voltar entre os campos</td></tr>
       </tbody>
     </table>
@@ -144,7 +132,8 @@
 <dialog class="sobre" id="dlg-ia" aria-labelledby="ia-titulo">
   <div class="sobre-inner">
     <h2 id="ia-titulo">Configurar inteligência artificial (opcional)</h2>
-    <p class="hint">Sem configuração, o Verbaliza funciona por completo: o professor escreve o roteiro com o apoio das regras. Com um serviço configurado, a imagem e o contexto são enviados ao serviço escolhido somente quando você pedir um rascunho.</p>
+    <p class="hint">Sem configuração, o Verbaliza funciona por completo: o professor escreve o roteiro com o apoio das regras. Com um serviço configurado, o Verbaliza gera automaticamente um rascunho da descrição assim que você anexa a imagem ou o PDF da atividade. O rascunho sempre precisa da revisão do professor.</p>
+    <p class="hint">Para começar sem custo, você pode criar uma chave do Google Gemini no Google AI Studio (aistudio.google.com), com a sua conta Google, e colá-la abaixo. O serviço gratuito tem limites de uso definidos pelo Google.</p>
     <div class="campo">
       <label for="ia-provedor">Serviço</label>
       <select id="ia-provedor" class="ui-select" style="width:100%">
@@ -165,6 +154,8 @@
       <p class="hint" id="ia-chave-dica">A chave é usada direto deste navegador para o serviço. Por padrão, fica guardada só até fechar a aba.</p>
     </div>
     <label class="check-linha"><input type="checkbox" id="ia-lembrar"> Lembrar a chave neste computador</label>
+    <label class="check-linha"><input type="checkbox" id="ia-auto" checked> Gerar o rascunho automaticamente ao anexar a imagem ou o PDF</label>
+    <label class="check-linha"><input type="checkbox" id="ia-consent"> Confirmo que não enviarei imagens que identifiquem estudantes e autorizo o envio da imagem da atividade e do contexto registrado ao serviço escolhido</label>
     <div class="acoes-linha">
       <button type="button" class="btn" id="ia-salvar">Salvar configuração</button>
       <button type="button" class="btn secundario" data-fechar>Fechar</button>
